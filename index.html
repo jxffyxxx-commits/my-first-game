@@ -1,88 +1,115 @@
-<script>
-  const canvas = document.getElementById("game");
-  const ctx = canvas.getContext("2d");
-
-  // ข้อมูลผู้เล่น (สีฟ้า)
-  const player = {
-    x: 50,
-    y: 50,
-    w: 40,
-    h: 40,
-    speed: 4
-  };
-
-  // ข้อมูลศัตรู (สีแดง)
-  const enemy = {
-    x: 300,
-    y: 200,
-    w: 40,
-    h: 40,
-    speedX: 2, // วิ่งซ้าย-ขวา
-    speedY: 2  // วิ่งขึ้น-ลง
-  };
-
-  const keys = {};
-  window.addEventListener("keydown", e => keys[e.key] = true);
-  window.addEventListener("keyup",   e => keys[e.key] = false);
-
-  function update() {
-    // 1. ควบคุมผู้เล่น
-    if (keys["ArrowLeft"]  || keys["a"]) player.x -= player.speed;
-    if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
-    if (keys["ArrowUp"]    || keys["w"]) player.y -= player.speed;
-    if (keys["ArrowDown"]  || keys["s"]) player.y += player.speed;
-
-    // จำกัดไม่ให้ผู้เล่นหลุดจอ
-    player.x = Math.max(0, Math.min(canvas.width  - player.w, player.x));
-    player.y = Math.max(0, Math.min(canvas.height - player.h, player.y));
-
-    // 2. ให้ศัตรูเคลื่อนที่อัตโนมัติ
-    enemy.x += enemy.speedX;
-    enemy.y += enemy.speedY;
-
-    // ชนขอบซ้าย/ขวา ให้เด้งกลับ
-    if (enemy.x <= 0 || enemy.x + enemy.w >= canvas.width) {
-      enemy.speedX *= -1;
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>เกมแรกของฉัน</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #1b1b2f;
     }
-    // ชนขอบบน/ล่าง ให้เด้งกลับ
-    if (enemy.y <= 0 || enemy.y + enemy.h >= canvas.height) {
-      enemy.speedY *= -1;
+    canvas {
+      background: #000;
+      border: 2px solid #444;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="game" width="600" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const player = {
+      x: 50,
+      y: 50,
+      w: 40,
+      h: 40,
+      speed: 4
+    };
+
+    const enemy = {
+      x: 300,
+      y: 200,
+      w: 40,
+      h: 40,
+      speedX: 2.5,
+      speedY: 2.5
+    };
+
+    // ตัวแปรสำหรับระบบคะแนน
+    let score = 0;
+    let frameCount = 0;
+
+    const keys = {};
+    window.addEventListener("keydown", e => keys[e.key] = true);
+    window.addEventListener("keyup",   e => keys[e.key] = false);
+
+    function update() {
+      // ควบคุมผู้เล่น
+      if (keys["ArrowLeft"]  || keys["a"]) player.x -= player.speed;
+      if (keys["ArrowRight"] || keys["d"]) player.x += player.speed;
+      if (keys["ArrowUp"]    || keys["w"]) player.y -= player.speed;
+      if (keys["ArrowDown"]  || keys["s"]) player.y += player.speed;
+
+      player.x = Math.max(0, Math.min(canvas.width  - player.w, player.x));
+      player.y = Math.max(0, Math.min(canvas.height - player.h, player.y));
+
+      // ศัตรูวิ่ง
+      enemy.x += enemy.speedX;
+      enemy.y += enemy.speedY;
+
+      if (enemy.x <= 0 || enemy.x + enemy.w >= canvas.width)  enemy.speedX *= -1;
+      if (enemy.y <= 0 || enemy.y + enemy.h >= canvas.height) enemy.speedY *= -1;
+
+      // ชนแล้วรีเซ็ตคะแนนและตำแหน่ง
+      if (
+        player.x < enemy.x + enemy.w &&
+        player.x + player.w > enemy.x &&
+        player.y < enemy.y + enemy.h &&
+        player.y + player.h > enemy.y
+      ) {
+        player.x = 50;
+        player.y = 50;
+        score = 0; // ชนแล้วคะแนนรีเซ็ตเป็น 0
+      }
+
+      // เพิ่มคะแนนตามเวลาที่รอดชีวิต
+      frameCount++;
+      if (frameCount % 30 === 0) { // ทุกๆ ครึ่งวินาที (30 เฟรม) คะแนนขึ้น
+        score += 10;
+      }
     }
 
-    // 3. เช็กการชนกันระหว่างผู้เล่นกับศัตรู (Game Over เบื้องต้น)
-    if (
-      player.x < enemy.x + enemy.w &&
-      player.x + player.w > enemy.x &&
-      player.y < enemy.y + enemy.h &&
-      player.y + player.h > enemy.y
-    ) {
-      // ถ้าชนกัน ให้รีเซ็ตตำแหน่งผู้เล่นกลับจุดเริ่มต้น
-      player.x = 50;
-      player.y = 50;
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // วาดผู้เล่นและศัตรู
+      ctx.fillStyle = "#00d9ff";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
+
+      ctx.fillStyle = "#ff4757";
+      ctx.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
+
+      // แสดงคะแนนและคำแนะนำบนจอ
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "16px sans-serif";
+      ctx.fillText(`คะแนน: ${score}`, 20, 30);
+      ctx.fillText("หนีสี่เหลี่ยมสีแดง!", 20, 375);
     }
-  }
 
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+    loop();
+  </script>
 
-    // วาดผู้เล่น (ฟ้า)
-    ctx.fillStyle = "#00d9ff";
-    ctx.fillRect(player.x, player.y, player.w, player.h);
-
-    // วาดศัตรู (แดง)
-    ctx.fillStyle = "#ff4757";
-    ctx.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
-
-    // ข้อความแนะนำ
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "14px sans-serif";
-    ctx.fillText("หนีสี่เหลี่ยมสีแดงให้อย่าให้โดน!", 10, 25);
-  }
-
-  function loop() {
-    update();
-    draw();
-    requestAnimationFrame(loop);
-  }
-  loop();
-</script>
+</body>
+</html>
